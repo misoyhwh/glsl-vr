@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Shader Test: Red</title>
+  <title>Shader Test: UV Gradient</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>body { margin: 0; overflow: hidden; }</style>
 </head>
@@ -21,20 +21,28 @@ renderer.xr.enabled = true;
 document.body.appendChild(renderer.domElement);
 document.body.appendChild(VRButton.createButton(renderer));
 
-// ✅ 赤表示のみのシェーダー
+// ✅ uvグラデーション
 const geometry = new THREE.BoxGeometry(2, 2, 2);
 const material = new THREE.ShaderMaterial({
   fragmentShader: `
+    precision highp float;
+    uniform vec2 iResolution;
+
     void main() {
-      gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);  // 赤
+      vec2 uv = gl_FragCoord.xy / iResolution;
+      gl_FragColor = vec4(uv, 0.0, 1.0);  // 左下→右上グラデーション
     }
-  `
+  `,
+  uniforms: {
+    iResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+  }
 });
 
 const mesh = new THREE.Mesh(geometry, material);
 scene.add(mesh);
 
 renderer.setAnimationLoop(() => {
+  material.uniforms.iResolution.value.set(window.innerWidth, window.innerHeight);
   renderer.render(scene, camera);
 });
 </script>
