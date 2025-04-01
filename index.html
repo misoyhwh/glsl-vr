@@ -13,6 +13,7 @@ import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 0, 3); // ✅ カメラを前方へ
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -20,7 +21,7 @@ renderer.xr.enabled = true;
 document.body.appendChild(renderer.domElement);
 document.body.appendChild(VRButton.createButton(renderer));
 
-const geometry = new THREE.BoxGeometry(2, 2, 2);
+const geometry = new THREE.BoxGeometry(3, 3, 3); // ✅ ボリュームを大きく
 const material = new THREE.ShaderMaterial({
   fragmentShader: `
     precision highp float;
@@ -73,6 +74,7 @@ renderer.setAnimationLoop(() => {
   material.uniforms.iTime.value = performance.now() * 0.001;
   material.uniforms.cameraPosition.value.copy(camera.position);
   material.uniforms.cameraMatrix.value.copy(camera.matrixWorldInverse).invert();
+  material.uniforms.iResolution.value.set(renderer.domElement.width, renderer.domElement.height);
   renderer.render(scene, camera);
 });
 
@@ -80,7 +82,6 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  material.uniforms.iResolution.value.set(window.innerWidth, window.innerHeight);
 });
 </script>
 </body>
