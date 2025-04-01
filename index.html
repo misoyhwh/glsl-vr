@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Shader Test: UV Gradient</title>
+  <title>Raymarch Sphere</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>body { margin: 0; overflow: hidden; }</style>
 </head>
@@ -21,20 +21,49 @@ renderer.xr.enabled = true;
 document.body.appendChild(renderer.domElement);
 document.body.appendChild(VRButton.createButton(renderer));
 
-// ✅ uvグラデーション
-const geometry = new THREE.BoxGeometry(2, 2, 2);
+// ✅ シェーダーで球体をraymarch表示
+const geometry = new THREE.BoxGeometry(4, 4, 4);
 const material = new THREE.ShaderMaterial({
   fragmentShader: `
     precision highp float;
     uniform vec2 iResolution;
+    uniform vec3 cameraPosition;
+    uniform mat4 cameraMatrix;
+
+    float sphereSDF(vec3 p) {
+      return length(p) - 1.0; // 半径1の球
+    }
 
     void main() {
-      vec2 uv = gl_FragCoord.xy / iResolution;
-      gl_FragColor = vec4(uv, 0.0, 1.0);  // 左下→右上グラデーション
+      vec2 uv = (gl_FragCoord.xy / iResolution.xy) * 2.0 - 1.0;
+      uv.x *= iResolution.x / iResolution.y;
+
+      vec3 rayOrigin = cameraPosition;
+      vec3 rayDir = normalize((cameraMatrix * vec4(uv, -1.0, 0.0)).xyz);
+
+      float t = 0.0;
+      float dist;
+      bool hit = false;
+
+      for (int i = 0; i < 64; i++) {
+        vec3 p = rayOrigin + rayDir * t;
+        dist = sphereSDF(p);
+        if (dist < 0.01) {
+          hit = true;
+          break;
+        }
+        t += dist;
+        if (t > 10.0) break;
+      }
+
+      vec3 color = hit ? vec3(1.0) : vec3(0.0);
+      gl_FragColor = vec4(color, 1.0);
     }
   `,
   uniforms: {
-    iResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+    iResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+    cameraPosition: { value: new THREE.Vector3() },
+    cameraMatrix: { value: new THREE.Matrix4() }
   }
 });
 
@@ -42,8 +71,16 @@ const mesh = new THREE.Mesh(geometry, material);
 scene.add(mesh);
 
 renderer.setAnimationLoop(() => {
-  material.uniforms.iResolution.value.set(window.innerWidth, window.innerHeight);
+  material.uniforms.cameraPosition.value.copy(camera.position);
+  material.uniforms.cameraMatrix.value.copy(camera.matrixWorldInverse).invert();
+  material.uniforms.iResolution.value.set(renderer.domElement.width, renderer.domElement.height);
   renderer.render(scene, camera);
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
 </body>
