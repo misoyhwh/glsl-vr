@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Step 2: Ray Direction (Fixed)</title>
+  <title>*Step 2: Ray Direction (Fixed)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>body { margin: 0; overflow: hidden; }</style>
 </head>
@@ -28,25 +28,25 @@ document.body.appendChild(VRButton.createButton(renderer));
 const geometry = new THREE.BoxGeometry(3, 3, 3);
 const material = new THREE.ShaderMaterial({
   fragmentShader: `
-    precision mediump float;
-    uniform vec2 iResolution;
-    uniform vec3 cameraPosition;
-    uniform mat4 cameraMatrix;
+precision mediump float;
+uniform vec2 iResolution;
+uniform mat4 cameraMatrix;
 
-    void main() {
-      vec2 uv = gl_FragCoord.xy / iResolution * 2.0 - 1.0;
-      uv.x *= iResolution.x / iResolution.y;
+void main() {
+  vec2 uv = gl_FragCoord.xy / iResolution * 2.0 - 1.0;
+  uv.x *= iResolution.x / iResolution.y;
 
-      vec4 camVec = cameraMatrix * vec4(uv.x, uv.y, -1.0, 0.0);
-      vec3 rayDirection = normalize(camVec.xyz);
+  // ✅ Three.js が自動的に渡す cameraPosition は「宣言せずにそのまま使う」
+  vec3 ro = cameraPosition;
+  vec4 camVec = cameraMatrix * vec4(uv.x, uv.y, -1.0, 0.0);
+  vec3 rd = normalize(camVec.xyz);
 
-      gl_FragColor = vec4(rayDirection * 0.5 + 0.5, 1.0);
-    }
+  gl_FragColor = vec4(rd * 0.5 + 0.5, 1.0);
+}
   `,
   uniforms: {
     iResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
     cameraMatrix: { value: new THREE.Matrix4() }
-    // ✅ cameraPosition は Three.js により自動で渡されるため不要！
   }
 });
 
